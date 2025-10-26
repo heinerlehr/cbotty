@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+src/cbotty/__init__.py
+src/cbotty/cbotty.py
+src/cbotty.egg-info/PKG-INFO
+src/cbotty.egg-info/SOURCES.txt
+src/cbotty.egg-info/dependency_links.txt
+src/cbotty.egg-info/requires.txt
+src/cbotty.egg-info/top_level.txt
+src/synthetic/sgen.py

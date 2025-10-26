@@ -5,3 +5,6 @@ __pycache__/
 .vscode/
 .venv/
 venv/
+outputs/
+synthetic_data/
+chroma_db/

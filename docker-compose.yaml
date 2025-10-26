@@ -1,0 +1,11 @@
+services:
+  cbotty:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - PYTHONPATH=/app/src
+    volumes:
+      # Mount source code for development (optional - remove for production)
+      - ./src:/app/src
+    restart: unless-stopped

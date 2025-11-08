@@ -46,18 +46,18 @@ def sgen(config: Configuration) -> None:
 
     for dept, details in config('syntheticgen', 'departments').items():
         logger.info(f"Generating synthetic data for department: {dept}")
-        prompt = details.prompt
+        prompt = details['prompt']
         questions = synthetic_data_generation(prompt, llm)
         # Store synthetic data as needed
-        filename = details.filename
+        filename = details['filename']
         with open(save_dir / filename, 'w') as f:
             json.dump(questions.model_dump(), f)
 
 
 if __name__ == "__main__":
     load_dotenv()
-
-    sgen()
+    config = Configuration()
+    sgen(config)
 
 
     logger.info("Synthetic data and Chroma vector store created successfully.")

@@ -1,3 +1,5 @@
+draw_graph: true
+
 hydra:
   output_subdir: null
 
@@ -14,6 +16,8 @@ chroma:
   k: 3
   score_threshold: 0.2
 
+sentiments: ["positive", "neutral", "negative"]
+
 syntheticgen:
   save_dir: "./synthetic_data"
   departments:
@@ -22,7 +26,7 @@ syntheticgen:
         filename: "hr_faqs.json"
         prompt: >
           Act as an expert in running the Human Resources department for Company ShopUNow which is a retail company selling 
-          a wide variety of products around clothing, DIY (do it yourself), books, toys. Create a list of 15 Questions and Answers 
+          a wide variety of products around clothing, DIY (do it yourself), books, toys. Create a list of 50 Questions and Answers 
           which could be most frequently asked questions for the human resources department typically by internal employees of the 
           company itself. Remember, the HR department handles employee lifecycle matters like leave, payroll, performance, and policy.
           Return the response as a list of python dicts with 'question', 'answer' and 'category' as keys where 'question' is the 
@@ -32,7 +36,7 @@ syntheticgen:
         filename: "it_faqs.json"
         prompt: >
           Act as an expert in running the Information Technology (IT) department for Company ShopUNow, which is a retail company 
-          selling a wide variety of products around clothing, DIY (do it yourself), books, and toys. Create a list of 15 Questions 
+          selling a wide variety of products around clothing, DIY (do it yourself), books, and toys. Create a list of 50 Questions 
           and Answers which could be the most frequently asked questions for the IT department, typically by internal employees of 
           the company itself. Remember, the IT department handles areas such as employee hardware and software support, system access, 
           password management, data security, network connectivity, and troubleshooting of internal tools and applications. 
@@ -43,7 +47,7 @@ syntheticgen:
         filename: "sales_faqs.json"
         prompt: >
           Act as an expert in running the Sales department for Company ShopUNow, which is a retail company selling a wide variety 
-          of products around clothing, DIY (do it yourself), books, and toys. Create a list of 15 Questions and Answers which could 
+          of products around clothing, DIY (do it yourself), books, and toys. Create a list of 50 Questions and Answers which could 
           be the most frequently asked questions for the sales department, typically by internal employees of the company itself. 
           Remember, the Sales department handles areas such as customer relationship management, sales targets, lead generation, 
           pricing and discounts, promotions, order processing, and coordination with marketing and logistics teams. 

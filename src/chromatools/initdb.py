@@ -9,8 +9,7 @@ from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 
 # Configuration management
-import hydra
-from omegaconf import DictConfig
+from utils.Configuration import Configuration
 
 # Logging
 from loguru import logger
@@ -23,24 +22,55 @@ from synthetic.sgen import Questions
 #
 #######################################################################################################################
 
-def cleandb(cfg: DictConfig) -> None:
+def cleandb(config: Configuration) -> None:
+    """
+    Delete a ChromaDB collection from the specified directory.
+
+    This function creates a connection to a ChromaDB collection using the provided
+    configuration and permanently deletes the entire collection from the persist
+    directory.
+
+    Args:
+        cfg (DictConfig): Configuration object containing ChromaDB settings.
+                         Must include:
+                         - cfg.chroma.collection_name: Name of the collection to delete
+                         - cfg.chroma.persist_directory: Directory where the collection is stored
+
+    Returns:
+        None
+
+    """
     chroma_db = Chroma(
-        collection_name=cfg.chroma.collection_name,
-        persist_directory=cfg.chroma.persist_directory
+        collection_name=config('chroma', 'collection_name'),
+        persist_directory=config('chroma', 'persist_directory')
     )
     chroma_db.delete_collection()
-    logger.info(f"Deleted Chroma collection '{cfg.chroma.collection_name}' from '{cfg.chroma.persist_directory}'.")
+    logger.info(f"Deleted Chroma collection '{config('chroma', 'collection_name')}' from '{config('chroma', 'persist_directory')}'.")
 
-def initdb(cfg: DictConfig) -> None:
+def initdb(config: Configuration) -> None:
+    """
+    Initialize the database by loading synthetic data from configured departments.
+    
+    Iterates through all departments defined in the configuration's syntheticgen section
+    and loads their corresponding data files into the ChromaDB collection.
+    
+    Args:
+        config (Configuration): Configuration object
+    Returns:
+        None
+    
+    Raises:
+        FileNotFoundError: If a department's data file doesn't exist
+        ConfigurationError: If required configuration keys are missing
+    """
 
-    for dept, details in cfg.syntheticgen.departments.items():
+    for dept, details in config('syntheticgen', 'departments').items():
         logger.info(f"Incorporating synthetic data for department: {dept}")
         # Store synthetic data as needed
-        filename = details.filename
-        load_db_from_file(file_path=Path(cfg.syntheticgen.save_dir) / filename, 
-                          collection_name=cfg.chroma.collection_name, 
-                          persist_directory=cfg.chroma.persist_directory)
-    
+        filename = details['filename']
+        load_db_from_file(file_path=Path(config('syntheticgen', 'save_dir')) / filename, 
+                          collection_name=config('chroma', 'collection_name'), 
+                          persist_directory=config('chroma', 'persist_directory'))
 
 def load_db_from_file(file_path: Path, collection_name: str, persist_directory: str) -> None:
     """
@@ -76,24 +106,56 @@ def load_db_from_file(file_path: Path, collection_name: str, persist_directory: 
     chroma_db.add_documents(documents)
     logger.info(f"Loaded {len(documents)} documents into Chroma collection '{collection_name}'.")
 
-def querydb(cfg: DictConfig, query: str, nresults: int) -> None:
+def querydb(config: Configuration, query: str, nresults: int) -> list[Document]:
+    """
+    Query the database using a retriever and log the top results.
+    
+    Args:
+        config (Configuration): Configuration object containing retriever settings
+        query (str): The search query string to execute
+        nresults (int): Number of top results to retrieve and display
+        
+    Returns:
+        None: This function logs results but doesn't return any value
+        
+    Note:
+        Results are logged with their content and metadata using the logger
+    """
 
-    retriever = get_retriever(cfg)
-    results = retriever.invoke(query, k=nresults)
-    logger.info(f"Top {nresults} results for query '{query}':")
-    for i, doc in enumerate(results, start=1):
-        logger.info(f"Result {i}: {doc.page_content} | Metadata: {doc.metadata}")
+    retriever = get_retriever(config)
+    return retriever.invoke(query, k=nresults)
 
-def get_retriever(cfg: DictConfig):
+
+def get_retriever(config: Configuration):
+    """
+    Create and configure a Chroma database retriever with OpenAI embeddings.
+    
+    This function initializes a Chroma vector database with OpenAI embeddings and
+    returns a configured retriever for similarity search operations.
+    
+    Args:
+        cfg (Configuration): Configuration object containing Chroma database settings.
+    
+    Returns:
+        VectorStoreRetriever: Configured Chroma retriever instance for document search
+
+    """
     embeddings = OpenAIEmbeddings()
 
     chroma_db = Chroma(
-        collection_name=cfg.chroma.collection_name,
+        collection_name=config('chroma', 'collection_name'),
         embedding_function=embeddings,
-        persist_directory=cfg.chroma.persist_directory
+        persist_directory=config('chroma', 'persist_directory')
     )
-    retriever = chroma_db.as_retriever(search_type=cfg.chroma.get('search_type', 'similarity_score_threshold'),
-                                       search_kwargs={"k": cfg.chroma.k, "score_threshold": cfg.chroma.score_threshold})
+
+    search_type=config('chroma').get('search_type', 'similarity_score_threshold')
+    score_threshold=config('chroma', 'score_threshold')
+    k=config('chroma', 'k')
+    retriever = chroma_db.as_retriever(search_type=search_type, 
+                                       search_kwargs={
+                                           "k": k,
+                                           "score_threshold": score_threshold
+                                       })
     return retriever
 
 #######################################################################################################################
@@ -103,10 +165,32 @@ def get_retriever(cfg: DictConfig):
 #######################################################################################################################
 
 
-@hydra.main(version_base=None, config_path="../../config", config_name="config")
-def main(cfg: DictConfig) -> None:
+def main(config: Configuration) -> None:
+    """
+    Execute database operations based on the specified task configuration.
 
-    task = cfg.get('task', 'init')  # Default to 'init'
+    This function serves as the main entry point for database operations, supporting
+    multiple tasks including initialization, cleaning, and querying of the database.
+
+    Args:
+        config (Configuration): Configuration object containing task parameters.
+
+    Returns:
+        Any: Return value from the executed task function, or None if task
+             is not recognized or an exception occurs.
+
+    Raises:
+        Exception: Logs any exceptions that occur during task execution without
+                  re-raising them.
+
+    Note:
+        Supported tasks:
+        - 'clean': Executes cleandb function
+        - 'init': Executes initdb function  
+        - 'query': Executes querydb function with query and nresults parameters
+    """
+
+    task = config.get('task', 'init')  # Default to 'init'
     ret = True
     kwargs = {}
     try:
@@ -116,13 +200,13 @@ def main(cfg: DictConfig) -> None:
             case 'init':
                 func = initdb
             case 'query':
-                kwargs = {'query': cfg.get('query', ''), 'nresults': cfg.get('nresults', 5)}
+                kwargs = {'query': config.get('query', ''), 'nresults': config.get('nresults', 5)}
                 func = querydb
             case _:
                 logger.error(f'Task {task} not recognized')
                 ret = False
         if ret:
-            return func(cfg=cfg, **kwargs)
+            return func(config=config, **kwargs)
     except Exception as e:
         logger.exception(f'An error occurred while executing task {task}: {e}')
 
@@ -131,4 +215,6 @@ parsed_args = None
 
 if __name__ == "__main__":
     load_dotenv()
-    main()
+    config = Configuration()
+
+    main(config)

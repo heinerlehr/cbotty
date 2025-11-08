@@ -1,11 +1,20 @@
 services:
   cbotty:
-    build: .
+    build:
+      context: .
+      secrets:
+        - env
     ports:
       - "8080:8080"
     environment:
       - PYTHONPATH=/app/src
+    env_file:
+      - .env
     volumes:
       # Mount source code for development (optional - remove for production)
       - ./src:/app/src
     restart: unless-stopped
+
+secrets:
+  env:
+    file: .env

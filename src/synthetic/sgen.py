@@ -1,6 +1,3 @@
-import hydra
-from omegaconf import DictConfig
-
 from loguru import logger
 
 import json
@@ -10,6 +7,8 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from langchain_openai import ChatOpenAI
+
+from utils.Configuration import Configuration
 
 class Question(BaseModel):
     question: str
@@ -39,14 +38,13 @@ def synthetic_data_generation(prompt, llm: ChatOpenAI):
     response = structured_llm.invoke(prompt)
     return response
 
-@hydra.main(version_base=None, config_path="../../config", config_name="config")
-def sgen(cfg: DictConfig) -> None:
+def sgen(config: Configuration) -> None:
     llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
 
-    if not (save_dir := Path(cfg.syntheticgen.save_dir)).exists():
+    if not (save_dir := Path(config('syntheticgen', 'save_dir'))).exists():
         save_dir.mkdir(parents=True)
 
-    for dept, details in cfg.syntheticgen.departments.items():
+    for dept, details in config('syntheticgen', 'departments').items():
         logger.info(f"Generating synthetic data for department: {dept}")
         prompt = details.prompt
         questions = synthetic_data_generation(prompt, llm)

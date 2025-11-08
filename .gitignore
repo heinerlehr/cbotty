@@ -8,3 +8,5 @@ venv/
 outputs/
 synthetic_data/
 chroma_db/
+*.png
+*.pdf

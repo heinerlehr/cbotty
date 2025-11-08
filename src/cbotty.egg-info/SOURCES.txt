@@ -7,4 +7,8 @@ src/cbotty.egg-info/SOURCES.txt
 src/cbotty.egg-info/dependency_links.txt
 src/cbotty.egg-info/requires.txt
 src/cbotty.egg-info/top_level.txt
+src/chromatools/initdb.py
 src/synthetic/sgen.py
+src/utils/Configuration.py
+src/utils/__init__.py
+src/workflow/agents.py
